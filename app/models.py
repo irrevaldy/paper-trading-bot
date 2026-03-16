@@ -4,31 +4,9 @@ from datetime import datetime
 
 
 @dataclass
-class Candle:
-    open_time: int
-    open: float
-    high: float
-    low: float
-    close: float
-    volume: float
-    close_time: int
-
-
-@dataclass
-class OrderBookSnapshot:
-    best_bid: float
-    best_ask: float
-    bid_volume_top: float
-    ask_volume_top: float
-    imbalance_ratio: float
-    spread_bps: float
-    ts: datetime = field(default_factory=datetime.utcnow)
-
-
-@dataclass
 class Signal:
     symbol: str
-    action: str  # BUY / SELL / HOLD
+    action: str
     reason: str
     price: float
     confidence: float = 0.0

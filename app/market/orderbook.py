@@ -1,4 +1,8 @@
-def compute_orderbook_metrics(bids: list[list[float]], asks: list[list[float]], depth: int) -> dict:
+def compute_orderbook_metrics(
+    bids: list[list[float]],
+    asks: list[list[float]],
+    depth: int,
+) -> dict:
     top_bids = bids[:depth]
     top_asks = asks[:depth]
 
@@ -12,6 +16,15 @@ def compute_orderbook_metrics(bids: list[list[float]], asks: list[list[float]], 
     spread_bps = ((best_ask - best_bid) / mid * 10000) if mid else 999999.0
     imbalance_ratio = (bid_volume / ask_volume) if ask_volume > 0 else 999999.0
 
+    max_bid_qty = max((float(q) for _, q in top_bids), default=0.0)
+    max_ask_qty = max((float(q) for _, q in top_asks), default=0.0)
+
+    avg_bid_qty = bid_volume / len(top_bids) if top_bids else 0.0
+    avg_ask_qty = ask_volume / len(top_asks) if top_asks else 0.0
+
+    suspicious_bid_wall = avg_bid_qty > 0 and max_bid_qty >= avg_bid_qty * 4
+    suspicious_ask_wall = avg_ask_qty > 0 and max_ask_qty >= avg_ask_qty * 4
+
     return {
         "best_bid": best_bid,
         "best_ask": best_ask,
@@ -19,4 +32,10 @@ def compute_orderbook_metrics(bids: list[list[float]], asks: list[list[float]], 
         "ask_volume_top": ask_volume,
         "imbalance_ratio": imbalance_ratio,
         "spread_bps": spread_bps,
+        "max_bid_qty": max_bid_qty,
+        "max_ask_qty": max_ask_qty,
+        "avg_bid_qty": avg_bid_qty,
+        "avg_ask_qty": avg_ask_qty,
+        "suspicious_bid_wall": suspicious_bid_wall,
+        "suspicious_ask_wall": suspicious_ask_wall,
     }

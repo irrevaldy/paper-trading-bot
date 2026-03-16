@@ -11,4 +11,10 @@ def ema(series: list[float], period: int) -> float | None:
 def average(values: list[float], lookback: int) -> float | None:
     if len(values) < lookback:
         return None
-    return sum(values[-lookback:]) / lookback
+    return float(sum(values[-lookback:]) / lookback)
+
+
+def pct_change(old: float, new: float) -> float:
+    if old == 0:
+        return 0.0
+    return (new - old) / old

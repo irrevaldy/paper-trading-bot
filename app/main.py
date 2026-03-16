@@ -1,43 +1,15 @@
+import asyncio
 import time
+
 from app.config import settings
-from app.utils import setup_logger
-from app.market.state import MarketState
-from app.market.orderbook import compute_orderbook_metrics
-from app.exchange.binance_paper import BinancePaperExchange
-from app.models import Portfolio
-from app.storage.journal import TradeJournal
-from app.risk.manager import RiskManager
+from app.exchange.binance_ws import BinanceWsExchange
 from app.execution.paper_executor import PaperExecutor
-from app.strategy.trend_volume_imbalance import TrendVolumeImbalanceStrategy
-
-
-def bootstrap_history(exchange, market_state, logger):
-    for symbol in settings.symbols:
-        candles = exchange.load_initial_candles(symbol=symbol, interval="1m", limit=120)
-        for c in candles:
-            market_state.update_candle(symbol, c["close"], c["volume"])
-        logger.info(f"Loaded {len(candles)} candles for {symbol}")
-
-
-def refresh_orderbooks(exchange, market_state):
-    for symbol in settings.symbols:
-        raw = exchange.get_orderbook(symbol, limit=settings.orderbook_depth_levels)
-        bids = [[float(p), float(q)] for p, q in raw["bids"]]
-        asks = [[float(p), float(q)] for p, q in raw["asks"]]
-        metrics = compute_orderbook_metrics(bids, asks, settings.orderbook_depth_levels)
-        market_state.update_orderbook(symbol, metrics)
-        if metrics["best_bid"] and metrics["best_ask"]:
-            mid_price = (metrics["best_bid"] + metrics["best_ask"]) / 2
-            market_state.last_prices[symbol] = mid_price
-
-
-def refresh_latest_candle(exchange, market_state):
-    for symbol in settings.symbols:
-        candles = exchange.load_initial_candles(symbol=symbol, interval="1m", limit=2)
-        latest = candles[-1]
-        closes = market_state.get_closes(symbol)
-        if not closes or closes[-1] != latest["close"]:
-            market_state.update_candle(symbol, latest["close"], latest["volume"])
+from app.market.state import MarketState
+from app.models import Portfolio
+from app.risk.manager import RiskManager
+from app.storage.journal import TradeJournal
+from app.strategy.trend_volume_imbalance_v2 import TrendVolumeImbalanceV2Strategy
+from app.utils import setup_logger
 
 
 def recalc_equity(portfolio, market_state):
@@ -48,48 +20,59 @@ def recalc_equity(portfolio, market_state):
     portfolio.equity = equity
 
 
-def main():
+async def run():
     logger = setup_logger(settings.log_level)
-    logger.info("Starting crypto paper bot")
+    logger.info("Starting crypto paper bot v2")
 
-    exchange = BinancePaperExchange()
     market_state = MarketState()
     portfolio = Portfolio(cash=settings.starting_balance, equity=settings.starting_balance)
     journal = TradeJournal()
-    risk_manager = RiskManager(portfolio, logger)
-    executor = PaperExecutor(portfolio, journal, logger, risk_manager)
-    strategy = TrendVolumeImbalanceStrategy(market_state, portfolio)
+    risk_manager = RiskManager(portfolio, market_state, logger)
+    executor = PaperExecutor(portfolio, market_state, journal, logger, risk_manager)
+    strategy = TrendVolumeImbalanceV2Strategy(market_state, portfolio)
+    exchange = BinanceWsExchange()
 
-    bootstrap_history(exchange, market_state, logger)
+    await exchange.bootstrap(market_state, logger)
+    recalc_equity(portfolio, market_state)
+    market_state.set_daily_start_equity_once(portfolio.equity)
 
-    while True:
-        try:
-            refresh_latest_candle(exchange, market_state)
-            refresh_orderbooks(exchange, market_state)
+    last_eval_ts = 0.0
 
-            for symbol in settings.symbols:
-                signal = strategy.evaluate(symbol)
+    async def on_tick():
+        nonlocal last_eval_ts
 
-                if signal.action == "BUY":
-                    executor.buy(symbol, signal.price, signal.reason)
-                elif signal.action == "SELL":
-                    executor.sell(symbol, signal.price, signal.reason)
+        now_ts = time.time()
+        if now_ts - last_eval_ts < 1.0:
+            return
 
-            recalc_equity(portfolio, market_state)
+        last_eval_ts = now_ts
 
-            logger.info(
-                f"Portfolio cash={portfolio.cash:.2f} equity={portfolio.equity:.2f} open_positions={len(portfolio.positions)}"
+        recalc_equity(portfolio, market_state)
+        market_state.reset_day_if_needed(portfolio.equity)
+
+        if risk_manager.daily_loss_limit_hit():
+            logger.warning(
+                f"Daily drawdown limit hit. equity={portfolio.equity:.2f} cash={portfolio.cash:.2f}"
             )
+            return
 
-            time.sleep(15)
+        for symbol in settings.symbols:
+            signal = strategy.evaluate(symbol, now_ts)
 
-        except KeyboardInterrupt:
-            logger.info("Bot stopped by user")
-            break
-        except Exception as e:
-            logger.exception(f"Main loop error: {e}")
-            time.sleep(5)
+            if signal.action == "BUY":
+                executor.buy(symbol, signal.price, signal.reason, now_ts)
+
+            elif signal.action == "SELL":
+                cooldown_until = now_ts + settings.cooldown_seconds
+                executor.sell(symbol, signal.price, signal.reason, cooldown_until)
+
+        recalc_equity(portfolio, market_state)
+        logger.info(
+            f"Portfolio cash={portfolio.cash:.2f} equity={portfolio.equity:.2f} open_positions={len(portfolio.positions)}"
+        )
+
+    await exchange.stream_forever(market_state, on_tick, logger)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(run())

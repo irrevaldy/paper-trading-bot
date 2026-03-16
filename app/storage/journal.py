@@ -22,7 +22,16 @@ class TradeJournal:
                     "realized_pnl",
                 ])
 
-    def write(self, symbol: str, action: str, price: float, quantity: float, reason: str, cash_after: float, realized_pnl: float = 0.0):
+    def write(
+        self,
+        symbol: str,
+        action: str,
+        price: float,
+        quantity: float,
+        reason: str,
+        cash_after: float,
+        realized_pnl: float = 0.0,
+    ):
         with open(self.filepath, "a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([
