@@ -4,13 +4,12 @@ import os
 
 def setup_logger(level: str = "INFO") -> logging.Logger:
     os.makedirs("logs", exist_ok=True)
+
     logger = logging.getLogger("crypto_bot")
     logger.setLevel(level)
 
     if not logger.handlers:
-        formatter = logging.Formatter(
-            "%(asctime)s | %(levelname)s | %(message)s"
-        )
+        formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
 
         stream_handler = logging.StreamHandler()
         stream_handler.setFormatter(formatter)

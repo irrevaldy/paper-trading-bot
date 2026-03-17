@@ -19,6 +19,7 @@ class Position:
     quantity: float
     stop_loss: float
     take_profit: float
+    highest_price: float
     opened_at: datetime = field(default_factory=datetime.utcnow)
     status: str = "OPEN"
     exit_price: Optional[float] = None

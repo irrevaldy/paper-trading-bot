@@ -2,6 +2,7 @@ def compute_orderbook_metrics(
     bids: list[list[float]],
     asks: list[list[float]],
     depth: int,
+    wall_factor: float,
 ) -> dict:
     top_bids = bids[:depth]
     top_asks = asks[:depth]
@@ -22,8 +23,8 @@ def compute_orderbook_metrics(
     avg_bid_qty = bid_volume / len(top_bids) if top_bids else 0.0
     avg_ask_qty = ask_volume / len(top_asks) if top_asks else 0.0
 
-    suspicious_bid_wall = avg_bid_qty > 0 and max_bid_qty >= avg_bid_qty * 4
-    suspicious_ask_wall = avg_ask_qty > 0 and max_ask_qty >= avg_ask_qty * 4
+    suspicious_bid_wall = avg_bid_qty > 0 and max_bid_qty >= avg_bid_qty * wall_factor
+    suspicious_ask_wall = avg_ask_qty > 0 and max_ask_qty >= avg_ask_qty * wall_factor
 
     return {
         "best_bid": best_bid,

@@ -1,5 +1,5 @@
 from collections import defaultdict, deque
-from datetime import datetime, date
+from datetime import date
 
 
 class MarketState:
@@ -8,11 +8,9 @@ class MarketState:
         self.volumes = defaultdict(lambda: deque(maxlen=maxlen))
         self.orderbooks = {}
         self.last_prices = {}
-        self.cooldowns = {}  # symbol -> unix ts until tradable
+        self.cooldowns = {}
         self.daily_start_equity = {}
         self.daily_date = date.today()
-        self.last_closed_candle_time = {}
-        self.last_candle_shock = defaultdict(lambda: False)
 
     def reset_day_if_needed(self, equity: float):
         today = date.today()

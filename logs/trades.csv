@@ -1,1 +1,4 @@
 timestamp,symbol,action,price,quantity,reason,cash_after,realized_pnl
+2026-03-16T10:08:48.816139,ETHUSDT,BUY,2266.005,0.04413053,trend up + volume confirmation + bid pressure,9899.9,0.0
+2026-03-16T10:10:36.542911,BTCUSDT,BUY,73340.615,0.00134985,trend up + volume confirmation + bid pressure,9800.8,0.0
+2026-03-16T10:12:24.540011,BTCUSDT,SELL,73320.145,0.00134985,trend lost + ask pressure,9899.67,-0.13

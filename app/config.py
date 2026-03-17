@@ -20,14 +20,17 @@ class Settings:
     binance_use_testnet: bool = _get_bool("BINANCE_USE_TESTNET", "true")
 
     symbols: list[str] = None
-    quote_asset: str = os.getenv("QUOTE_ASSET", "USDT")
     starting_balance: float = float(os.getenv("STARTING_BALANCE", "10000"))
+    quote_asset: str = os.getenv("QUOTE_ASSET", "USDT")
 
     risk_per_trade: float = float(os.getenv("RISK_PER_TRADE", "0.01"))
     max_open_positions: int = int(os.getenv("MAX_OPEN_POSITIONS", "2"))
     stop_loss_pct: float = float(os.getenv("STOP_LOSS_PCT", "0.015"))
     take_profit_pct: float = float(os.getenv("TAKE_PROFIT_PCT", "0.03"))
+    trailing_stop_pct: float = float(os.getenv("TRAILING_STOP_PCT", "0.01"))
+    enable_trailing_stop: bool = _get_bool("ENABLE_TRAILING_STOP", "true")
     fee_rate: float = float(os.getenv("FEE_RATE", "0.001"))
+    min_notional: float = float(os.getenv("MIN_NOTIONAL", "25"))
 
     short_ema: int = int(os.getenv("SHORT_EMA", "9"))
     long_ema: int = int(os.getenv("LONG_EMA", "21"))
@@ -37,12 +40,17 @@ class Settings:
     orderbook_depth_levels: int = int(os.getenv("ORDERBOOK_DEPTH_LEVELS", "10"))
     min_imbalance_ratio: float = float(os.getenv("MIN_IMBALANCE_RATIO", "1.15"))
     max_spread_bps: float = float(os.getenv("MAX_SPREAD_BPS", "8"))
+    wall_factor: float = float(os.getenv("WALL_FACTOR", "4.0"))
 
     cooldown_seconds: int = int(os.getenv("COOLDOWN_SECONDS", "300"))
     shock_move_pct: float = float(os.getenv("SHOCK_MOVE_PCT", "0.015"))
-    wall_factor: float = float(os.getenv("WALL_FACTOR", "4.0"))
     max_daily_drawdown_pct: float = float(os.getenv("MAX_DAILY_DRAWDOWN_PCT", "0.03"))
-    min_notional: float = float(os.getenv("MIN_NOTIONAL", "25"))
+
+    telegram_enabled: bool = _get_bool("TELEGRAM_ENABLED", "false")
+    telegram_bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    telegram_chat_id: str = os.getenv("TELEGRAM_CHAT_ID", "")
+
+    db_path: str = os.getenv("DB_PATH", "data/trading_bot.db")
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
 
     def __post_init__(self):
