@@ -7,7 +7,7 @@ load_dotenv()
 
 def _get_list(name: str, default: str) -> list[str]:
     raw = os.getenv(name, default)
-    return [x.strip().upper() for x in raw.split(",") if x.strip()]
+    return [x.strip().lower() for x in raw.split(",") if x.strip()]
 
 
 def _get_bool(name: str, default: str = "false") -> bool:
@@ -17,11 +17,14 @@ def _get_bool(name: str, default: str = "false") -> bool:
 @dataclass
 class Settings:
     bot_mode: str = os.getenv("BOT_MODE", "paper")
-    binance_use_testnet: bool = _get_bool("BINANCE_USE_TESTNET", "true")
+    max_symbols: int = int(os.getenv("MAX_SYMBOLS", "20"))
+
+    indodax_api_key: str = os.getenv("INDODAX_API_KEY", "")
+    indodax_api_secret: str = os.getenv("INDODAX_API_SECRET", "")
 
     symbols: list[str] = None
-    starting_balance: float = float(os.getenv("STARTING_BALANCE", "10000"))
-    quote_asset: str = os.getenv("QUOTE_ASSET", "USDT")
+    starting_balance: float = float(os.getenv("STARTING_BALANCE", "1000000"))
+    quote_asset: str = os.getenv("QUOTE_ASSET", "idr")
 
     risk_per_trade: float = float(os.getenv("RISK_PER_TRADE", "0.01"))
     max_open_positions: int = int(os.getenv("MAX_OPEN_POSITIONS", "2"))
@@ -29,8 +32,8 @@ class Settings:
     take_profit_pct: float = float(os.getenv("TAKE_PROFIT_PCT", "0.03"))
     trailing_stop_pct: float = float(os.getenv("TRAILING_STOP_PCT", "0.01"))
     enable_trailing_stop: bool = _get_bool("ENABLE_TRAILING_STOP", "true")
-    fee_rate: float = float(os.getenv("FEE_RATE", "0.001"))
-    min_notional: float = float(os.getenv("MIN_NOTIONAL", "25"))
+    fee_rate: float = float(os.getenv("FEE_RATE", "0.003"))
+    min_notional: float = float(os.getenv("MIN_NOTIONAL", "50000"))
 
     short_ema: int = int(os.getenv("SHORT_EMA", "9"))
     long_ema: int = int(os.getenv("LONG_EMA", "21"))
@@ -55,7 +58,7 @@ class Settings:
 
     def __post_init__(self):
         if self.symbols is None:
-            self.symbols = _get_list("SYMBOLS", "BTCUSDT,ETHUSDT")
+            self.symbols = _get_list("SYMBOLS", "btc_idr,eth_idr")
 
 
 settings = Settings()
